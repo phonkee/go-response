@@ -66,7 +66,7 @@ GetStatus returns status for given context, if not found returns default or Stat
 */
 func GetStatus(ctx context.Context, def ...int) int {
 	if value, ok := ctx.Value(statusKey).(int); !ok {
-		if len(def) {
+		if len(def) > 0 {
 			return def[0]
 		} else {
 			return http.StatusNotFound
