@@ -1,9 +1,6 @@
 package response
 
-import (
-	"context"
-	"net/http"
-)
+import "net/http"
 
 const (
 	statusKey = 118999
@@ -59,29 +56,6 @@ Result is helper to create status ok response.
 */
 func Result(result interface{}) Response {
 	return New().Result(result)
-}
-
-/*
-GetStatus returns status for given context, if not found returns default or StatusNotFound if no default given
-*/
-func GetStatus(ctx context.Context, def ...int) int {
-	if value, ok := ctx.Value(statusKey).(int); !ok {
-		if len(def) > 0 {
-			return def[0]
-		} else {
-			return http.StatusNotFound
-		}
-	} else {
-		return value
-	}
-}
-
-/*
-SetStatus sets status for given context
-*/
-func SetStatus(ctx context.Context, status int) context.Context {
-	context.WithValue(ctx, statusKey, status)
-	return ctx
 }
 
 /*

@@ -42,7 +42,10 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strconv"
 )
+
+const STATUS_HEADER = "X-Response-Status"
 
 /*
 Response interface provides several method for Response
@@ -325,13 +328,15 @@ func (r *response) Write(w http.ResponseWriter, request *http.Request) (err erro
 	// if not status set we set from context
 	if r.status == 0 {
 		r.status = http.StatusOK
+
+		// set status to response
+		r.Status(r.status)
 	}
 
-	r.Status(r.status)
+	// the only way how to set status
+	w.Header().Set(STATUS_HEADER, strconv.Itoa(r.status))
 
-	// set status to context
-	*request = *request.WithContext(SetStatus(request.Context(), r.status))
-
+	// write status
 	w.WriteHeader(r.status)
 	fmt.Fprint(w, r.String())
 	return
