@@ -90,3 +90,10 @@ SliceResult is helper to create status ok response.
 func SliceResult(result interface{}) Response {
 	return New().SliceResult(result)
 }
+
+/*
+Write writes to response and returns error
+*/
+func Write(w http.ResponseWriter, r *http.Request) error {
+	return New().Write(w, r)
+}
