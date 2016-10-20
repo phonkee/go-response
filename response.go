@@ -101,22 +101,6 @@ type Response interface {
 	Write(w http.ResponseWriter, request *http.Request) (err error)
 }
 
-/*
-New returns new response instance, if no status is given StatusOK is used
-*/
-func New(statuses ...int) (result Response) {
-	result = &response{
-		data:    map[string]interface{}{},
-		headers: map[string]string{},
-	}
-	result.ContentType("application/json")
-	if len(statuses) > 0 {
-		result.Status(statuses[0])
-	} else {
-		result.Status(http.StatusOK)
-	}
-	return
-}
 
 /*
 response is implementation of Response interface
