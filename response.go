@@ -324,8 +324,13 @@ func (r *response) Write(w http.ResponseWriter, request *http.Request) (err erro
 
 	// if not status set we set from context
 	if r.status == 0 {
-		r.Status(http.StatusOK)
+		r.status = http.StatusOK
 	}
+
+	r.Status(r.status)
+
+	// set status to context
+	request.WithContext(SetStatus(request.Context(), r.status))
 
 	w.WriteHeader(r.status)
 	fmt.Fprint(w, r.String())
