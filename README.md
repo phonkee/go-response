@@ -49,6 +49,24 @@ response serves following shortcuts to create responses
 * SliceResult
 * Write
 
+Example:
+
+```go
+result := map[string]string{}
+response.Result(result)
+````
+
+Is the same as doing 
+```go
+result := map[string]string{}
+response.New(http.StatusOK).Result(result)
+````
+
+or even
+```go
+result := map[string]string{}
+response.New().Result(result)
+````
 
 ### Contributions
 
