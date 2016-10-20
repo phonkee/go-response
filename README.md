@@ -39,6 +39,16 @@ There is also shorthand to provide slice result that automatiaclly adds `result_
 ```go
 response.New().SliceResult(result).Write(w, r)
 ```
+### Shortcuts
+
+response serves following shortcuts to create responses 
+* Data
+* Error
+* HTML
+* Result
+* SliceResult
+* Write
+
 
 ### Contributions
 
