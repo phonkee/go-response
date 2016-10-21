@@ -71,3 +71,35 @@ Write writes to response and returns error
 func Write(w http.ResponseWriter, r *http.Request) error {
 	return New().Write(w, r)
 }
+
+/*
+Couple of shorthands to return responses with common http statuses
+*/
+
+/*
+BadRequest returns response with StatusBadRequest
+*/
+func BadRequest() Response {
+	return New(http.StatusBadRequest)
+}
+
+/*
+NotFound returns response with StatusNotFound
+*/
+func NotFound() Response {
+	return New(http.StatusNotFound)
+}
+
+/*
+OK returns response with StatusOK
+*/
+func OK() Response {
+	return New()
+}
+
+/*
+Unauthorized returns response with StatusUnauthorized
+*/
+func Unauthorized() Response {
+	return New(http.StatusUnauthorized)
+}
