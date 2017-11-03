@@ -3,6 +3,7 @@ package response
 import (
 	"net/http"
 	"testing"
+	"errors"
 )
 
 func TestNewResponse(t *testing.T) {
@@ -31,4 +32,18 @@ func TestSliceResult(t *testing.T) {
 		}
 	}
 
+}
+
+func TestErrorMap(t *testing.T) {
+
+	custom := errors.New("my custom error")
+
+	// Register custom error
+	RegisterError(custom, http.StatusNotFound)
+
+	r := Error(custom).(*response)
+
+	if r.status != http.StatusNotFound {
+		t.Errorf("status is bad, expected: %v got:%v", http.StatusNotFound, r.status)
+	}
 }
