@@ -4,6 +4,7 @@ package response
 import (
 	"sync"
 	"net/http"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -54,6 +55,9 @@ func (e *errMap) GetStatus(err error) (status int) {
 
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
+
+	// get cause if available
+	err = errors.Cause(err)
 
 	if status, ok = e.registry[err]; !ok {
 		status = http.StatusInternalServerError
