@@ -207,7 +207,9 @@ func (r *response) Error(err interface{}) Response {
 	switch err := err.(type) {
 	case error:
 		// set status from errMap
-		r.Status(GetErrorStatus(err))
+		if s := GetErrorStatus(err); s != 0 {
+			r.Status(s)
+		}
 		r.data["error"] = err.Error()
 	case fmt.Stringer:
 		r.data["error"] = err.String()

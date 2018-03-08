@@ -3,7 +3,6 @@ package response
 
 import (
 	"sync"
-	"net/http"
 	"github.com/pkg/errors"
 )
 
@@ -60,7 +59,7 @@ func (e *errMap) GetStatus(err error) (status int) {
 	err = errors.Cause(err)
 
 	if status, ok = e.registry[err]; !ok {
-		status = http.StatusInternalServerError
+		status = 0
 	}
 
 	return
