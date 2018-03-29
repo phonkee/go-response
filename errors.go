@@ -55,12 +55,17 @@ func (e *errMap) GetStatus(err error) (status int) {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
+	// if error is found
+	if status, ok = e.registry[err]; ok {
+		return
+	}
+
 	// get cause if available
 	err = errors.Cause(err)
 
-	if status, ok = e.registry[err]; !ok {
-		status = 0
+	if status, ok = e.registry[err]; ok {
+		return
 	}
 
-	return
+	return 0
 }
