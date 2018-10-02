@@ -101,7 +101,7 @@ type Response interface {
 	String() (body string)
 
 	// Write complete response to writer
-	Write(w http.ResponseWriter, request *http.Request) (err error)
+	Write(w http.ResponseWriter, request *http.Request)
 }
 
 
@@ -321,7 +321,7 @@ func (r *response) MarshalJSON() (result []byte, err error) {
 Write
 	writes response to writer
 */
-func (r *response) Write(w http.ResponseWriter, request *http.Request) (err error) {
+func (r *response) Write(w http.ResponseWriter, request *http.Request) {
 
 	// write headers
 	w.Header().Set("Content-Type", r.contentType)

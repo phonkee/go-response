@@ -68,8 +68,8 @@ func SliceResult(result interface{}) Response {
 /*
 Write writes to response and returns error
 */
-func Write(w http.ResponseWriter, r *http.Request) error {
-	return New().Write(w, r)
+func Write(w http.ResponseWriter, r *http.Request) {
+	New().Write(w, r)
 }
 
 /*
