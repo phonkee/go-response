@@ -104,7 +104,6 @@ type Response interface {
 	Write(w http.ResponseWriter, request *http.Request)
 }
 
-
 /*
 response is implementation of Response interface
 */
@@ -291,6 +290,8 @@ func (r *response) GetBytes() (body []byte) {
 		// marshal self
 		if b, err = json.Marshal(r); err == nil {
 			body = b
+		} else {
+			body = []byte(err.Error())
 		}
 	} else {
 		body = []byte(*r.body)
