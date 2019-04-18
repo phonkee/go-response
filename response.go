@@ -141,7 +141,7 @@ func (r *response) HTML(html string) Response {
 Result set json result to response
 */
 func (r *response) Result(result interface{}) Response {
-	return r.Data("result", result)
+	return r.Data(currentKeyFormat.ResultKey, result)
 }
 
 /*
@@ -149,7 +149,7 @@ ResultSize
 	Set result_size to response
 */
 func (r *response) ResultSize(size int) Response {
-	return r.Data("result_size", size)
+	return r.Data(currentKeyFormat.ResultSizeKey, size)
 }
 
 /*
@@ -157,7 +157,7 @@ Result
 	Set result to response
 */
 func (r *response) SliceResult(result interface{}) Response {
-	r.Data("result", result)
+	r.Data(currentKeyFormat.ResultKey, result)
 	value := reflect.ValueOf(result)
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
@@ -210,11 +210,11 @@ func (r *response) Error(err interface{}) Response {
 		if s := GetErrorStatus(err); s != 0 {
 			r.Status(s)
 		}
-		r.data["error"] = err.Error()
+		r.data[currentKeyFormat.ErrorKey] = err.Error()
 	case fmt.Stringer:
-		r.data["error"] = err.String()
+		r.data[currentKeyFormat.ErrorKey] = err.String()
 	default:
-		r.data["error"] = err
+		r.data[currentKeyFormat.ErrorKey] = err
 	}
 	return r
 }
@@ -309,8 +309,8 @@ func (r *response) MarshalJSON() (result []byte, err error) {
 	}
 
 	// add data to data
-	data["status"] = r.status
-	data["message"] = r.message
+	data[currentKeyFormat.StatusKey] = r.status
+	data[currentKeyFormat.MessageKey] = r.message
 
 	result, err = json.Marshal(data)
 
