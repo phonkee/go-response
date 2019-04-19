@@ -331,8 +331,11 @@ func (r *response) Write(w http.ResponseWriter, request *http.Request) {
 
 	// if not status set we set from context
 	if r.status == 0 {
-		r.status = http.StatusOK
-
+		if _, ok := r.data[currentKeyFormat.ErrorKey]; ok {
+			r.status = http.StatusInternalServerError
+		} else {
+			r.status = http.StatusOK
+		}
 		// set status to response
 		r.Status(r.status)
 	}
