@@ -2,7 +2,9 @@
 package response
 
 import (
+	"net/http"
 	"sync"
+
 	"github.com/pkg/errors"
 )
 
@@ -51,6 +53,12 @@ func (e *errMap ) Register(err error, status int)  {
 // GetStatus returns appropriate status for given error
 func (e *errMap) GetStatus(err error) (status int) {
 	var ok bool
+
+	defer func() {
+		if r := recover(); r != nil {
+			status = http.StatusInternalServerError
+		}
+	}()
 
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
