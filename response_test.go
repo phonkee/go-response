@@ -1,64 +1,65 @@
 package response
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
-	"github.com/pkg/errors"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNewResponse(t *testing.T) {
-	response := New().(*response)
-	if response.status != http.StatusOK {
-		t.Fail()
-	}
+func TestResponse_Header(t *testing.T) {
+	ass := assert.New(t)
+
+	// check header value
+	r := New().Header("key", "value")
+	ass.Equal(r.Headers().Get("key"), "value")
+
+	// check multiple values
+	r = New().Header("key", "new", "other", "yeah")
+	ass.Equal(r.Headers().Get("key"), "new")
+	ass.Equal(r.Headers().Get("other"), "yeah")
 }
 
-func TestSliceResult(t *testing.T) {
+func TestResponse_Result(t *testing.T) {
+	ass := assert.New(t)
+	result := "hello"
 
-	var tests = []struct {
-		slice  interface{}
-		size int
+	ass.Equal(New().Result(result).(response).result, result)
+}
+
+func TestResponse_Error(t *testing.T) {
+	ass := assert.New(t)
+
+	// first test for http.StatusInternalServerError
+	e := fmt.Errorf("testing error")
+	ass.Equal(Error(e).(response).result, e.Error())
+	ass.Equal(Error(e).(response).status, http.StatusInternalServerError)
+
+	// test registered error (
+	ass.Equal(http.StatusTeapot, Error(fmt.Errorf("%w", customError)).(response).status)
+}
+
+func TestResponse_Write(t *testing.T) {
+	ass := assert.New(t)
+
+	data := []struct {
+		given        Response
+		expectStatus int
+		expectBody   string
 	}{
-		{[]string{"Helllo", "world", "you"}, 3},
-		{&[]string{"Nice"}, 1},
+		{OK(), http.StatusOK, "\"OK\""},
 	}
 
-	for _, test := range tests {
-		r := New().SliceResult(test.slice).(*response)
-		size := r.data["result_size"].(int)
-
-		if size != test.size {
-			t.Errorf("size don't match, expected:%v got:%v", size, test.size)
-		}
-	}
-
-}
-
-func TestErrorMap(t *testing.T) {
-
-	custom := errors.New("my custom error")
-	wrapped := errors.Wrap(custom, "wrappeds")
-
-	// Register custom error
-	RegisterError(custom, http.StatusNotFound)
-
-	r := Error(custom).(*response)
-
-	if r.status != http.StatusNotFound {
-		t.Errorf("status is bad, expected: %v got:%v", http.StatusNotFound, r.status)
-	}
-
-	r = Error(custom).(*response)
-
-	if r.status != http.StatusNotFound {
-		t.Errorf("status is bad, expected: %v got:%v", http.StatusNotFound, r.status)
-	}
-
-	RegisterError(wrapped, http.StatusTeapot)
-
-	r = Error(wrapped).(*response)
-
-	if r.status != http.StatusTeapot {
-		t.Errorf("status is bad, expected: %v got:%v", http.StatusTeapot, r.status)
+	for _, item := range data {
+		recorder := httptest.NewRecorder()
+		req, err := http.NewRequest(http.MethodGet, "", nil)
+		ass.Nil(err)
+		item.given.Write(req, recorder)
+		x, _ := io.ReadAll(recorder.Result().Body)
+		ass.Equal(item.expectBody, strings.TrimRight(string(x), "\n"))
 	}
 }

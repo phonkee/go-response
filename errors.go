@@ -1,24 +1,16 @@
-// error helper package
 package response
 
 import (
+	"errors"
 	"net/http"
 	"sync"
 
-	"github.com/pkg/errors"
+	errs "github.com/pkg/errors"
 )
 
 var (
-	em *errMap
+	em = newErrMap()
 )
-
-func init() {
-	// initialize global error map
-	em = &errMap{
-		mutex: &sync.RWMutex{},
-		registry:map[error]int{},
-	}
-}
 
 // RegisterError registers error to given http status
 func RegisterError(err error, status int) {
@@ -28,6 +20,13 @@ func RegisterError(err error, status int) {
 // GetErrorStatus returns appropriate http status for given error
 func GetErrorStatus(err error) int {
 	return em.GetStatus(err)
+}
+
+func newErrMap() *errMap {
+	return &errMap{
+		mutex:    &sync.RWMutex{},
+		registry: map[error]int{},
+	}
 }
 
 // errMap provides mapping from errors to http statuses
@@ -42,7 +41,7 @@ type errMap struct {
 }
 
 // Register registers error
-func (e *errMap ) Register(err error, status int)  {
+func (e *errMap) Register(err error, status int) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -68,12 +67,19 @@ func (e *errMap) GetStatus(err error) (status int) {
 		return
 	}
 
-	// get cause if available
-	err = errors.Cause(err)
-
-	if status, ok = e.registry[err]; ok {
-		return
+	// try errors package
+	if cause := errs.Cause(err); cause != nil {
+		if status, ok = e.registry[err]; ok {
+			return
+		}
 	}
 
-	return 0
+	// unwrap wrapped stdlib error
+	if unw := errors.Unwrap(err); unw != nil {
+		if status, ok = e.registry[unw]; ok {
+			return
+		}
+	}
+
+	return http.StatusInternalServerError
 }

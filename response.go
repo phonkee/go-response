@@ -1,350 +1,104 @@
-/*
-Response
-helper interface for structured json responses. Response has also support to provide HTML content, but primarily it's
-
-targeted to json rest apis
-
-Response supports errors, raw content, etc..
-
-Setter methods support chaining so writing response to http is doable on single line
-In next examples we use these variables
-
-	w http.ResponseWriter
-	r *http.Request
-
-Example of responses
-
-	response.New(http.StatusInternalServerError).Error(errors.New("error")).Write(w, r)
-	response.New().Error(structError).Write(w, r)
-	response.New().Result(product).Write(w, r)
-	response.New().Result(products).ResultSize(size).Write(w, r)
-	response.New().SliceResult(products).Write(w, r)
-	response.New(http.StatusForbidden).Write(w, r)
-
-Also there is non required argument status
-
-	body := map[string]string{
-		"version": "1.0beta"
-	}
-	response.New(http.StatusOK).Body(body)Write(w, r)
-	response.New(http.StatusOK).Result(product).Write(w, r)
-	response.New(http.StatusOK).SliceResult(products).Write(w, r)
-
-Minimal support for html responses
-
-	response.New().HTML("<html></html>").Write(w, r)
-
-*/
 package response
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"reflect"
-	"strconv"
 )
 
-const STATUS_HEADER = "X-Response-Status"
-
-/*
-Response interface provides several method for Response
-*/
-type Response interface {
-
-	// set raw body
-	Body(body interface{}) Response
-
-	// Set Content type
-	ContentType(contenttype string) Response
-
-	// set data to response data
-	Data(key string, value interface{}) Response
-
-	// delete data value identified by key
-	DeleteData(key string) Response
-
-	// delete header by name
-	DeleteHeader(name string) Response
-
-	// sets `error` to response data
-	Error(err interface{}) Response
-
-	// returns response as []byte
-	GetBytes() []byte
-
-	// set header with value
-	Header(name, value string) Response
-
-	// set html and content type (for template rendering)
-	HTML(html string) Response
-
-	// set http message
-	Message(message string) Response
-
-	// custom json marshalling function
-	MarshalJSON() (result []byte, err error)
-
-	// set `result` on response data (shorthand for Data("result", data))
-	Result(result interface{}) Response
-
-	// set result_size on response
-	ResultSize(size int) Response
-
-	// set slice result (sets `result` and `result_size`)
-	SliceResult(result interface{}) Response
-
-	// set http status
-	Status(status int) Response
-
-	// return string value of response
-	String() (body string)
-
-	// Write complete response to writer
-	Write(w http.ResponseWriter, request *http.Request)
+// newResponse returns blank response
+func newResponse() Response {
+	return response{
+		headers: http.Header{},
+	}.Status(DefaultStatus)
 }
 
-
-/*
-response is implementation of Response interface
-*/
+// response implements Response interface
 type response struct {
-	contentType string
-	data        map[string]interface{}
-	headers     map[string]string
-	status      int
-	message     string
-	// Raw body
-	body *string
+	status  int
+	result  interface{}
+	headers http.Header
 }
 
-/*
-ContentType
-	Set content type fo response
-*/
-func (r *response) ContentType(ct string) Response {
-	r.contentType = ct
-	return r
-}
-
-/*
-ContentType
-	Set content type fo response
-*/
-func (r *response) HTML(html string) Response {
-	r.ContentType("text/html")
-	r.body = &html
-	return r
-}
-
-/*
-Result set json result to response
-*/
-func (r *response) Result(result interface{}) Response {
-	return r.Data(currentKeyFormat.ResultKey, result)
-}
-
-/*
-ResultSize
-	Set result_size to response
-*/
-func (r *response) ResultSize(size int) Response {
-	return r.Data(currentKeyFormat.ResultSizeKey, size)
-}
-
-/*
-Result
-	Set result to response
-*/
-func (r *response) SliceResult(result interface{}) Response {
-	r.Data(currentKeyFormat.ResultKey, result)
-	value := reflect.ValueOf(result)
-	if value.Kind() == reflect.Ptr {
-		value = value.Elem()
-	}
-
-	if value.Kind() != reflect.Slice {
+// Error sets error and status
+func (r response) Error(err error) Response {
+	// if there is no error we do nothing
+	if err == nil {
 		return r
 	}
+	errText := err.Error()
 
-	r.ResultSize(value.Len())
+	return r.Status(GetErrorStatus(err)).Result(errText)
+}
+
+// Header sets header value, if you need more functionality use Headers
+func (r response) Header(kv ...string) Response {
+	h := r.Headers()
+
+	// add all given headers
+	for i := 0; i <= (len(kv)/2)-1; i++ {
+		h.Set(kv[2*i], kv[(2*i)+1])
+	}
+
 	return r
 }
 
-/*
-Status
-	set http status
-*/
-func (r *response) Status(status int) Response {
+// Headers returns reference to headers
+func (r response) Headers() http.Header {
+	return r.headers
+}
+
+// Status sets status code and tries to resolve status text
+func (r response) Status(status int) Response {
 	r.status = status
-	r.Message(http.StatusText(r.status))
-	return r
-}
 
-/*
-Data
-	sets data on response
-*/
-func (r *response) Data(key string, value interface{}) Response {
-	r.data[key] = value
-	return r
-}
-
-/*
-DelData
-	removes data from response
-*/
-func (r *response) DeleteData(key string) Response {
-	delete(r.data, key)
-	return r
-}
-
-/*
-Error
-	adds error to result
-*/
-func (r *response) Error(err interface{}) Response {
-	switch err := err.(type) {
-	case error:
-		// set status from errMap
-		if s := GetErrorStatus(err); s != 0 {
-			r.Status(s)
-		}
-		r.data[currentKeyFormat.ErrorKey] = err.Error()
-	case fmt.Stringer:
-		r.data[currentKeyFormat.ErrorKey] = err.String()
-	default:
-		r.data[currentKeyFormat.ErrorKey] = err
+	// if result was not set, and status is some meaningful value (non zero)
+	if status != 0 && r.result == nil {
+		r = r.StatusText(http.StatusText(status)).(response)
 	}
+
 	return r
 }
 
-/*
-Header
-	sets header to response
-*/
-func (r *response) Header(name, value string) Response {
-	r.headers[name] = value
+// StatusText sets status text to given value
+func (r response) StatusText(statusText string) Response {
+	r.result = statusText
 	return r
 }
 
-/*
-DeleteHeader
-	deletes header value
-*/
-func (r *response) DeleteHeader(name string) Response {
-	delete(r.headers, name)
+// Result sets json value
+func (r response) Result(result interface{}) Response {
+	r.result = result
 	return r
 }
 
-/*
-Message
-	sets message
-*/
-func (r *response) Message(message string) Response {
-	r.message = message
-	return r
-}
+// Write writes all data to response
+func (r response) Write(_ *http.Request, w http.ResponseWriter) {
+	// store headers pointer
+	headers := w.Header()
 
-/*
-Body
-	sets raw body of response
-	If value is stringer or string or []byte we will use string value.
-	Otherwise we marshal it as json value
-*/
-func (r *response) Body(value interface{}) Response {
-	switch v := value.(type) {
-	case fmt.Stringer:
-		tmp := v.String()
-		r.body = &tmp
-	case string:
-		r.body = &v
-	case nil:
-		r.body = nil
-	case []byte:
-		tmp := string(v)
-		r.body = &tmp
-	default:
-		if json, err := json.Marshal(value); err == nil {
-			tmp := string(json)
-			r.body = &tmp
-		} else {
-			r.body = nil
-			return r.Error(err).Status(http.StatusInternalServerError)
+	// now update all headers
+	for key, _ := range r.Headers() {
+		for _, value := range r.Headers().Values(key) {
+			headers.Add(key, value)
 		}
 	}
-	return r
-}
 
-// returns string representation
-func (r *response) String() (body string) {
-	return string(r.GetBytes())
-}
+	// add json content type (always)
+	headers.Set("Content-Type", "application/json")
 
-// returns string representation
-func (r *response) GetBytes() (body []byte) {
-	if r.body == nil {
-		var (
-			b   []byte
-			err error
-		)
-		// marshal self
-		if b, err = json.Marshal(r); err == nil {
-			body = b
+	// check if we have something to write first
+	if r.result != nil {
+		// encode to json
+		if errMarshal := json.NewEncoder(w).Encode(r.result); errMarshal != nil {
+			// cannot marshal json - internal server error
+			w.WriteHeader(http.StatusInternalServerError)
+
+			// I believe this will not fail
+			_ = json.NewEncoder(w).Encode(errMarshal.Error())
+			return
 		}
-	} else {
-		body = []byte(*r.body)
-	}
-	return
-}
-
-/*
-MarshalJSON
-	custom json marshallization
-*/
-func (r *response) MarshalJSON() (result []byte, err error) {
-	data := map[string]interface{}{}
-	for k, v := range r.data {
-		data[k] = v
 	}
 
-	// add data to data
-	data[currentKeyFormat.StatusKey] = r.status
-	data[currentKeyFormat.MessageKey] = r.message
-
-	result, err = json.Marshal(data)
-
-	return
-}
-
-/*
-Write
-	writes response to writer
-*/
-func (r *response) Write(w http.ResponseWriter, request *http.Request) {
-
-	// write headers
-	w.Header().Set("Content-Type", r.contentType)
-	for k, v := range r.headers {
-		w.Header().Set(k, v)
-	}
-
-	// if not status set we set from context
-	if r.status == 0 {
-		if _, ok := r.data[currentKeyFormat.ErrorKey]; ok {
-			r.status = http.StatusInternalServerError
-		} else {
-			r.status = http.StatusOK
-		}
-		// set status to response
-		r.Status(r.status)
-	}
-
-	// the only way how to set status
-	w.Header().Set(STATUS_HEADER, strconv.Itoa(r.status))
-
-	// write status
+	// add status
 	w.WriteHeader(r.status)
-	fmt.Fprint(w, r.String())
-	return
 }
