@@ -1,105 +1,58 @@
 package response
 
-import "net/http"
-
-const (
-	statusKey = 118999
+import (
+	"net/http"
 )
 
-/*
-New returns new response instance, if no status is given StatusOK is used
-*/
+var (
+	// DefaultStatus is set by default
+	DefaultStatus = http.StatusOK
+)
+
+// Response
+// this interface is helper for writing json methods
+type Response interface {
+	// Error sets error to response
+	Error(error) Response
+
+	// Header sets given headers and returns new response
+	Header(kv ...string) Response
+
+	// Headers returns reference to headers
+	Headers() http.Header
+
+	// Status sets http status
+	Status(int) Response
+
+	// StatusText sets status text (response)
+	StatusText(string) Response
+
+	// Result sets json result (body)
+	Result(interface{}) Response
+
+	// Write writes to given response writer
+	Write(r *http.Request, w http.ResponseWriter)
+}
+
+// Error creates reponse with error
+func Error(err error) Response {
+	return newResponse().Error(err)
+}
+
+// New returns new response instance, if no status is given StatusOK is used
 func New(statuses ...int) (result Response) {
-	result = &response{
-		data:    map[string]interface{}{},
-		headers: map[string]string{},
+	if len(statuses) > 0 && statuses[0] != 0 {
+		return newResponse().Status(statuses[0])
 	}
-	result.ContentType("application/json")
-	if len(statuses) > 0 {
-		result.Status(statuses[0])
-	} else {
-		result.Status(http.StatusOK)
-	}
-	return
+	return newResponse()
 }
 
-/*
-Body is helper to create response
-*/
-func Body(body interface{}) Response {
-	return New().Body(body)
-}
-
-/*
-Data is helper to create status ok response.
-*/
-func Data(key string, value interface{}) Response {
-	return New().Data(key, value)
-}
-
-/*
-Error is helper to create status ok response.
-*/
-func Error(err interface{}) Response {
-	return New(http.StatusInternalServerError).Error(err)
-}
-
-/*
-HTML returns response set to HTML
-*/
-func HTML(html string) Response {
-	return New().HTML(html)
-}
-
-/*
-Result is helper to create status ok response.
-*/
-func Result(result interface{}) Response {
-	return New().Result(result)
-}
-
-/*
-SliceResult is helper to create status ok response.
-*/
-func SliceResult(result interface{}) Response {
-	return New().SliceResult(result)
-}
-
-/*
-Write writes to response and returns error
-*/
-func Write(w http.ResponseWriter, r *http.Request) {
-	New().Write(w, r)
-}
-
-/*
-Couple of shorthands to return responses with common http statuses
-*/
-
-/*
-BadRequest returns response with StatusBadRequest
-*/
-func BadRequest() Response {
-	return New(http.StatusBadRequest)
-}
-
-/*
-NotFound returns response with StatusNotFound
-*/
-func NotFound() Response {
-	return New(http.StatusNotFound)
-}
-
-/*
-OK returns response with StatusOK
-*/
+// OK is success response
 func OK() Response {
-	return New()
+	return New(http.StatusOK)
 }
 
-/*
-Unauthorized returns response with StatusUnauthorized
-*/
-func Unauthorized() Response {
-	return New(http.StatusUnauthorized)
+// Result returns instantiated response with json data and 200 - OK
+func Result(result interface{}) Response {
+	return New(http.StatusOK).Result(result)
 }
