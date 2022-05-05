@@ -1,16 +1,21 @@
 package response
 
 var (
-	// currentKeyFormat holds current key format
+	// currentKeyFormat holds current key KeyFormat
 	currentKeyFormat = SnakeCaseFormat
 )
 
-// Format sets format to given format
-func Format(f format) {
+// Format sets KeyFormat to given KeyFormat
+func Format(f KeyFormat) {
 	currentKeyFormat = f
 }
 
-type format struct {
+// CurrentFormat returns current key
+func CurrentFormat() KeyFormat {
+	return currentKeyFormat
+}
+
+type KeyFormat struct {
 	ErrorKey      string
 	MessageKey    string
 	ResultKey     string
@@ -20,7 +25,7 @@ type format struct {
 
 var (
 	// CamelCaseFormat sets common keys as camel case
-	CamelCaseFormat = format{
+	CamelCaseFormat = KeyFormat{
 		ErrorKey:      "Error",
 		MessageKey:    "Message",
 		ResultKey:     "Result",
@@ -29,7 +34,7 @@ var (
 	}
 
 	// SnakeCaseFormat sets common keys as snake case
-	SnakeCaseFormat = format{
+	SnakeCaseFormat = KeyFormat{
 		ErrorKey:      "error",
 		MessageKey:    "message",
 		ResultKey:     "result",
