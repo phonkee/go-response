@@ -1,11 +1,11 @@
-// error helper package
 package response
 
 import (
+	"errors"
 	"net/http"
 	"sync"
 
-	"github.com/pkg/errors"
+	gerrors "github.com/pkg/errors"
 )
 
 var (
@@ -14,9 +14,13 @@ var (
 
 func init() {
 	// initialize global error map
-	em = &errMap{
-		mutex: &sync.RWMutex{},
-		registry:map[error]int{},
+	em = newErrMap()
+}
+
+func newErrMap() *errMap {
+	return &errMap{
+		mutex:    &sync.RWMutex{},
+		registry: map[error]int{},
 	}
 }
 
@@ -42,7 +46,7 @@ type errMap struct {
 }
 
 // Register registers error
-func (e *errMap ) Register(err error, status int)  {
+func (e *errMap) Register(err error, status int) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -63,16 +67,23 @@ func (e *errMap) GetStatus(err error) (status int) {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
-	// if error is found
-	if status, ok = e.registry[err]; ok {
-		return
+	// try multiple sources
+	for _, errFound := range []error{err, gerrors.Cause(err)} {
+		if errFound == nil {
+			continue
+		}
+		if status, ok = e.registry[errFound]; ok {
+			return
+		}
 	}
 
-	// get cause if available
-	err = errors.Cause(err)
-
-	if status, ok = e.registry[err]; ok {
-		return
+	for {
+		if err = errors.Unwrap(err); err == nil {
+			break
+		}
+		if status, ok = e.registry[err]; ok {
+			return
+		}
 	}
 
 	return 0
