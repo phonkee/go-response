@@ -33,7 +33,6 @@ Also there is non required argument status
 Minimal support for html responses
 
 	response.New().HTML("<html></html>").Write(w, r)
-
 */
 package response
 
@@ -104,7 +103,6 @@ type Response interface {
 	Write(w http.ResponseWriter, request *http.Request)
 }
 
-
 /*
 response is implementation of Response interface
 */
@@ -120,6 +118,7 @@ type response struct {
 
 /*
 ContentType
+
 	Set content type fo response
 */
 func (r *response) ContentType(ct string) Response {
@@ -129,6 +128,7 @@ func (r *response) ContentType(ct string) Response {
 
 /*
 ContentType
+
 	Set content type fo response
 */
 func (r *response) HTML(html string) Response {
@@ -146,6 +146,7 @@ func (r *response) Result(result interface{}) Response {
 
 /*
 ResultSize
+
 	Set result_size to response
 */
 func (r *response) ResultSize(size int) Response {
@@ -154,6 +155,7 @@ func (r *response) ResultSize(size int) Response {
 
 /*
 Result
+
 	Set result to response
 */
 func (r *response) SliceResult(result interface{}) Response {
@@ -173,6 +175,7 @@ func (r *response) SliceResult(result interface{}) Response {
 
 /*
 Status
+
 	set http status
 */
 func (r *response) Status(status int) Response {
@@ -183,6 +186,7 @@ func (r *response) Status(status int) Response {
 
 /*
 Data
+
 	sets data on response
 */
 func (r *response) Data(key string, value interface{}) Response {
@@ -192,6 +196,7 @@ func (r *response) Data(key string, value interface{}) Response {
 
 /*
 DelData
+
 	removes data from response
 */
 func (r *response) DeleteData(key string) Response {
@@ -199,8 +204,14 @@ func (r *response) DeleteData(key string) Response {
 	return r
 }
 
+func (r *response) HasData(key string) bool {
+	_, ok := r.data[key]
+	return ok
+}
+
 /*
 Error
+
 	adds error to result
 */
 func (r *response) Error(err interface{}) Response {
@@ -221,6 +232,7 @@ func (r *response) Error(err interface{}) Response {
 
 /*
 Header
+
 	sets header to response
 */
 func (r *response) Header(name, value string) Response {
@@ -230,6 +242,7 @@ func (r *response) Header(name, value string) Response {
 
 /*
 DeleteHeader
+
 	deletes header value
 */
 func (r *response) DeleteHeader(name string) Response {
@@ -239,6 +252,7 @@ func (r *response) DeleteHeader(name string) Response {
 
 /*
 Message
+
 	sets message
 */
 func (r *response) Message(message string) Response {
@@ -248,6 +262,7 @@ func (r *response) Message(message string) Response {
 
 /*
 Body
+
 	sets raw body of response
 	If value is stringer or string or []byte we will use string value.
 	Otherwise we marshal it as json value
@@ -300,6 +315,7 @@ func (r *response) GetBytes() (body []byte) {
 
 /*
 MarshalJSON
+
 	custom json marshallization
 */
 func (r *response) MarshalJSON() (result []byte, err error) {
@@ -319,6 +335,7 @@ func (r *response) MarshalJSON() (result []byte, err error) {
 
 /*
 Write
+
 	writes response to writer
 */
 func (r *response) Write(w http.ResponseWriter, request *http.Request) {
