@@ -72,6 +72,7 @@ type Response interface {
 	// returns response as []byte
 	GetBytes() []byte
 
+	HasData(key string)
 	// set header with value
 	Header(name, value string) Response
 
